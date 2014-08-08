@@ -824,9 +824,8 @@ class FiniteDatasetIterator(object):
         next_index = self._subset_iterator.next()
         # TODO: handle fancy-index copies by allocating a buffer and
         # using np.take()
-
         rval = tuple(
-            fn(data[next_index]) if fn else data[next_index]
+            fn(data[next_index,...]) if fn else data[next_index,...]
             for data, fn in safe_izip(self._raw_data, self._convert))
         if not self._return_tuple and len(rval) == 1:
             rval, = rval
