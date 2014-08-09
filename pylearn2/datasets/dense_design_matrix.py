@@ -263,7 +263,7 @@ class DenseDesignMatrix(Dataset):
         if self.y_labels is not None:
             assert self.y is not None
             assert self.y.ndim <= 2
-            assert np.all(self.y < self.y_labels)
+            assert np.all(self.y[...] < self.y_labels)
 
     @functools.wraps(Dataset.iterator)
     def iterator(self, mode=None, batch_size=None, num_batches=None,
@@ -1168,13 +1168,14 @@ class DenseDesignMatrixPyTables(DenseDesignMatrix):
                  X=None,
                  topo_view=None,
                  y=None,
+                 y_labels=None,
                  view_converter=None,
                  axes=('b', 0, 1, 'c'),
                  rng=_default_seed):
         super_self = super(DenseDesignMatrixPyTables, self)
         super_self.__init__(X=X,
                             topo_view=topo_view,
-                            y=y,
+                            y=y,y_labels=y_labels,
                             view_converter=view_converter,
                             axes=axes,
                             rng=rng)
