@@ -159,6 +159,9 @@ def make_argument_parser():
                         action='store_true',
                         help='Display any DEBUG-level log messages, '
                              'suppressed by default.')
+    parser.add_argument('--profile', '-P',
+                        action='store_true',
+                        help='Profile the run using statprof.')
     parser.add_argument('config', action='store',
                         choices=None,
                         help='A YAML configuration file specifying the '
@@ -167,7 +170,7 @@ def make_argument_parser():
 
 
 def train(config, level_name=None, timestamp=None, time_budget=None,
-          verbose_logging=None, debug=None):
+          verbose_logging=None, debug=None, profile=None):
     """
     Trains a given YAML file.
 
@@ -223,7 +226,11 @@ def train(config, level_name=None, timestamp=None, time_budget=None,
         root_logger.setLevel(logging.DEBUG)
     else:
         root_logger.setLevel(logging.INFO)
-
+        
+    if profile:
+        import statprof
+        statprof.start()
+        
     if iterable:
         for number, subobj in enumerate(iter(train_obj)):
             # Publish a variable indicating the training phase.
@@ -240,7 +247,13 @@ def train(config, level_name=None, timestamp=None, time_budget=None,
             gc.collect()
     else:
         train_obj.main_loop(time_budget=time_budget)
-
+    
+    if profile:
+        statprof.stop()
+        with open('prof.out','w') as f:
+            statprof.display(f)
+        statprof.display()
+        print 'note: profile results were also saved to prof.out'
 
 if __name__ == "__main__":
     """
@@ -249,4 +262,4 @@ if __name__ == "__main__":
     parser = make_argument_parser()
     args = parser.parse_args()
     train(args.config, args.level_name, args.timestamp, args.time_budget,
-          args.verbose_logging, args.debug)
+          args.verbose_logging, args.debug, args.profile)
