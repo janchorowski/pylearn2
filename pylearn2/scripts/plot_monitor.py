@@ -19,6 +19,7 @@ __email__ = "pylearn-dev@googlegroups"
 import gc
 import numpy as np
 import sys
+import re
 
 from pylearn2.utils import serial
 from theano.printing import _TagGenerator
@@ -119,6 +120,7 @@ def main():
             sorted_codes.append(code)
 
         x_axis = 'example'
+        y_axis = 'lin'
         print 'set x_axis to example'
 
         if len(channels.values()) == 0:
@@ -142,7 +144,7 @@ def main():
             response = raw_input('Enter a list of channels to plot ' + \
                     '(example: A, C,F-G, h, <test_err>) or q to quit' + \
                     ' or o for options: ')
-
+            
             if response == 'o':
                 print '1: smooth all channels'
                 print 'any other response: do nothing, go back to plotting'
@@ -173,6 +175,8 @@ def main():
             final_codes = set([])
 
             for code in codes:
+                if code == '':
+                    continue
                 if code == 'e':
                     x_axis = 'epoch'
                     continue
@@ -182,9 +186,24 @@ def main():
                     x_axis = 'second'
                 elif code == 'h':
                     x_axis = 'hour'
+                elif code == 'l':
+                    if y_axis=='lin':
+                        y_axis='log'
+                    else:
+                        y_axis='lin'
+                    continue
                 elif code.startswith('<'):
                     assert code.endswith('>')
                     final_codes.add(code)
+                elif code.startswith('re:'):
+                    code=code[3:] #eat re:
+                    code = code.strip()
+                    code_pattern = re.compile(code)
+                    for code,name in codebook.iteritems():
+                        if code_pattern.findall(code):
+                            #print "Adding %s->%s" %(code, name)
+                            final_codes.add(code)
+                    
                 elif code.find('-') != -1:
                     #The current list element is a range of codes
 
@@ -261,16 +280,23 @@ def main():
             else:
                 assert False
 
-
-            ax.plot( x,
-                      y,
-                      styles[idx % len(styles)],
-                      marker = '.', # add point margers to lines
-                      label = channel_name)
+            if y_axis=='lin':
+                ax.plot( x,
+                          y,
+                          styles[idx % len(styles)],
+                          marker = '.', # add point margers to lines
+                          label = channel_name)
+                ax.ticklabel_format( scilimits = (-3,3), axis = 'both')
+            else:
+                ax.semilogy( x,
+                          y,
+                          styles[idx % len(styles)],
+                          marker = '.', # add point margers to lines
+                          label = channel_name)
 
         plt.xlabel('# '+x_axis+'s')
-        ax.ticklabel_format( scilimits = (-3,3), axis = 'both')
-
+        
+        plt.grid(True,which="both")
         handles, labels = ax.get_legend_handles_labels()
         lgd = ax.legend(handles, labels, loc='upper center',
                 bbox_to_anchor=(0.5,-0.1))
