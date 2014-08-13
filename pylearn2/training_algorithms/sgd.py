@@ -3,6 +3,8 @@ Stochastic Gradient Descent and related functionality such as
 learning rate adaptation, momentum, and Polyak averaging.
 """
 from __future__ import division
+import time
+import datetime
 
 __authors__ = "Ian Goodfellow"
 __copyright__ = "Copyright 2010-2012, Universite de Montreal"
@@ -37,11 +39,28 @@ from pylearn2.utils import contains_inf
 from pylearn2.utils import isfinite
 from pylearn2.utils.data_specs import DataSpecsMapping
 from pylearn2.utils.exc import reraise_as
-from pylearn2.utils.timing import log_timing
+from pylearn2.utils.timing import log_timing, total_seconds
 from pylearn2.utils.rng import make_np_rng
 
 
 log = logging.getLogger(__name__)
+
+import multiprocessing
+def __inner_process(iterator, q):
+    for batch in iterator:
+        q.put(batch)
+    q.put(StopIteration)
+     
+def spawned_iterator(iterator):
+    q = multiprocessing.Queue(2)
+    proc = multiprocessing.Process(target=__inner_process,args=(iterator, q))
+    proc.start()
+    while True:
+        o = q.get()
+        if o==StopIteration:
+            break
+        yield o
+    proc.join()
 
 
 class SGD(TrainingAlgorithm):
@@ -446,12 +465,23 @@ class SGD(TrainingAlgorithm):
                 batch_size=self.batch_size,
                 data_specs=flat_data_specs, return_tuple=True,
                 rng = rng, num_batches = self.batches_per_iter)
-
+        
+        iterator = spawned_iterator(iterator)
+        
         on_load_batch = self.on_load_batch
+        
+        tot_data_load_time = datetime.timedelta()
+        tot_comp_time = datetime.timedelta()
+        tot_monitor_time = datetime.timedelta()
+        data_loat_start_time = datetime.datetime.now()
         for batch in iterator:
             for callback in on_load_batch:
                 callback(*batch)
+            data_load_end_time = datetime.datetime.now()
             self.sgd_update(*batch)
+            comp_end_time = datetime.datetime.now()
+            tot_data_load_time += data_load_end_time-data_loat_start_time
+            tot_comp_time += comp_end_time-data_load_end_time
             # iterator might return a smaller batch if dataset size
             # isn't divisible by batch_size
             # Note: if data_specs[0] is a NullSpace, there is no way to know
@@ -461,6 +491,10 @@ class SGD(TrainingAlgorithm):
             self.monitor.report_batch(actual_batch_size)
             for callback in self.update_callbacks:
                 callback(self)
+            data_loat_start_time = datetime.datetime.now()
+            tot_monitor_time += data_loat_start_time - comp_end_time
+            
+        print '!!!!! data load time: ',total_seconds(tot_data_load_time),' comp: ', total_seconds(tot_comp_time), ' monitor updates ', total_seconds(tot_monitor_time), '!!!!!!!!!!'
 
         # Make sure none of the parameters have bad values
         for param in self.params:

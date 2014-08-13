@@ -194,7 +194,9 @@ already been reported."""
                     val=self.total_seconds,
                     data_specs=(NullSpace(), ''),
                     dataset=self.model.monitor._datasets[0])
-            self.run_callbacks_and_monitoring()
+            with log_timing(
+                            log, None, final_msg='Monitoring time:'):
+                self.run_callbacks_and_monitoring()
             while True:
                 if self.exceeded_time_budget(t0, time_budget):
                     break
@@ -211,8 +213,11 @@ already been reported."""
                                          "TrainingAlgorithm.continue_learning "
                                          "to control whether learning "
                                          "continues.")
-                    self.model.monitor.report_epoch()
-                    extension_continue = self.run_callbacks_and_monitoring()
+                    
+                    with log_timing(
+                            log, None, final_msg='Monitoring time:'):
+                        self.model.monitor.report_epoch()
+                        extension_continue = self.run_callbacks_and_monitoring()
                     if self.save_freq > 0 and \
                        self.model.monitor.get_epochs_seen() % self.save_freq == 0:
                         self.save()
