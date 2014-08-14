@@ -53,7 +53,7 @@ def __inner_process(iterator, q):
      
 def spawned_iterator(iterator):
     q = multiprocessing.Queue(2)
-    proc = multiprocessing.Process(target=__inner_process,args=(iterator, q))
+    proc = multiprocessing.Process(target=__inner_process, args=(iterator, q))
     proc.start()
     while True:
         o = q.get()
@@ -61,7 +61,6 @@ def spawned_iterator(iterator):
             break
         yield o
     proc.join()
-
 
 class SGD(TrainingAlgorithm):
     """
@@ -184,7 +183,7 @@ class SGD(TrainingAlgorithm):
                  set_batch_size = False,
                  train_iteration_mode = None, batches_per_iter=None,
                  theano_function_mode = None, monitoring_costs=None,
-                 seed=[2012, 10, 5]):
+                 seed=[2012, 10, 5], spawn_iterator=False):
 
         if isinstance(cost, (list, tuple, set)):
             raise TypeError("SGD no longer supports using collections of " +
@@ -226,6 +225,7 @@ class SGD(TrainingAlgorithm):
         self.rng = make_np_rng(seed, which_method=["randn","randint"])
         self.theano_function_mode = theano_function_mode
         self.monitoring_costs = monitoring_costs
+        self.spawn_iterator = spawn_iterator
 
     def setup(self, model, dataset):
         """
@@ -466,7 +466,8 @@ class SGD(TrainingAlgorithm):
                 data_specs=flat_data_specs, return_tuple=True,
                 rng = rng, num_batches = self.batches_per_iter)
         
-        iterator = spawned_iterator(iterator)
+        if self.spawn_iterator:
+            iterator = spawned_iterator(iterator)
         
         on_load_batch = self.on_load_batch
         
