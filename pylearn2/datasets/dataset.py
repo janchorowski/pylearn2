@@ -2,12 +2,11 @@
 A module defining the Dataset class.
 """
 
-
 class Dataset(object):
     """
     Abstract interface for Datasets.
     """
-
+        
     def __iter__(self):
         """
         .. todo::
@@ -17,7 +16,8 @@ class Dataset(object):
         return self.iterator()
 
     def iterator(self, mode=None, batch_size=None, num_batches=None,
-                 topo=None, targets=False, rng=None):
+                 topo=None, targets=None, rng=None, data_specs=None,
+                 return_tuple=False):
         """
         Return an iterator for this dataset with the specified
         behaviour. Unspecified values are filled-in by the default.
@@ -32,9 +32,15 @@ class Dataset(object):
         Parameters
         ----------
         mode : str or object, optional
-            One of 'sequential', 'random_slice', or 'random_uniform',
-            *or* a class that instantiates an iterator that returns
-            slices or index sequences on every call to next().
+            One of:
+            1.  'sequential', 'shuffled_sequential', 'random_slice', 
+                'random_uniform', 'batchwise_shuffled_sequential',
+                'even_sequential', 'even_shuffled_sequential',
+                'even_batchwise_shuffled_sequential', or 'random_uniform'
+            2.  *or* a class that instantiates an iterator that returns
+                slices or index sequences on every call to next().
+            For definition of the iterator strigns 
+            see :func:`pylearn2.utils.resolve_iterator_class`
         batch_size : int, optional
             The size of an individual batch. Optional if `mode` is
             'sequential' and `num_batches` is specified (batch size
@@ -43,10 +49,6 @@ class Dataset(object):
             The total number of batches. Unnecessary if `mode` is
             'sequential' and `batch_size` is specified (number of
             batches will be calculated based on full dataset size).
-        topo : boolean, optional
-            Whether batches returned by the iterator should present
-            examples in a topological view or not. Defaults to
-            `False`.
         rng : int, object or array_like, optional
             Either an instance of `numpy.random.RandomState` (or
             something with a compatible interface), or a seed value
@@ -58,16 +60,38 @@ class Dataset(object):
             through the dataset and may potentially be shared by
             multiple iterator objects simultaneously (see "Notes"
             below).
+        
+        New parameters, that relate to the data space concepts:
+        
+        data_specs: a tuple (space, source) in which
+            1. space is a non-nested composite space, and sources are a list of source names
+            2. space is a non-composite space, and source is a string indicateing the source name
+        
+        return_tuple: if only one data soure is requested, should it 
+            be still returned as a tuple?
+        
+        Deprecated parameters that do not use the data space concepts:    
+        
+        topo : boolean, optional
+            Whether batches returned by the iterator should present
+            examples in a topological view or not. Defaults to
+            `False`.
         targets: TODO
             TODO
 
         Returns
         -------
         iter_obj : object
-            An iterator object implementing the standard Python
+            An iterator object that in addidition to the standard Python
             iterator protocol (i.e. it has an `__iter__` method that
             return the object itself, and a `next()` method that
-            returns results until it raises `StopIteration`).
+            returns results until it raises `StopIteration`) also provides 
+            the following properties:
+            stochastic: whether the iterator is stochastic
+            num_examples: how many examples will be provided by the iterator
+            num_batches: How many batches will be returned
+            batch_size: The (maximum) number of examples in each batch
+            uneven: TODO, what is it?
 
         Notes
         -----
@@ -174,3 +198,4 @@ class Dataset(object):
         Infinite datasets have float('inf') examples.
         """
         raise NotImplementedError()
+
