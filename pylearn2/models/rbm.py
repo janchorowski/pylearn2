@@ -898,13 +898,14 @@ class GaussianBinaryRBM(RBM):
             irange=0.5, rng=None,
                  mean_vis=False, init_sigma=2., learn_sigma=False,
                  sigma_lr_scale=1., init_bias_hid=0.0,
-                 min_sigma = .1, max_sigma = 10.):
+                 min_sigma = .1, max_sigma = 10., init_bias_vis=None):
         super(GaussianBinaryRBM, self).__init__(nvis = nvis, nhid = nhid,
                                                 transformer = transformer,
                                                 vis_space = vis_space,
                                                 hid_space = hid_space,
                                                 irange = irange, rng = rng,
-                                                init_bias_hid = init_bias_hid)
+                                                init_bias_hid = init_bias_hid,
+                                                init_bias_vis = init_bias_vis)
 
         self.learn_sigma = learn_sigma
         self.init_sigma = init_sigma

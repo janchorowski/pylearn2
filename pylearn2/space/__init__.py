@@ -1446,6 +1446,9 @@ class IndexSequenceSpace(SimplyTypedSpace):
             format_func = (self.formatter.format if is_numeric else
                            self.formatter.theano_expr)
             return _cast(format_func(batch, mode=mode), space.dtype)
+        elif isinstance(space, IndexSpace):
+            if space.dim != self.dim or space.max_labels != self.max_labels:
+                raise ValueError("Can't simulate a ")
         elif isinstance(space, IndexSequenceSpace):
             if space.dim != self.dim or space.max_labels != self.max_labels:
                 raise ValueError("The two IndexSequenceSpaces' dim and "
