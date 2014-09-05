@@ -252,3 +252,63 @@ class AdaDelta(LearningRule):
 
         return updates
 
+class AdaGrad(LearningRule):
+    """
+    Implements the AdaGrad ("Adaptive Subgradient Methods for
+    Online Learning and Stochastic Optimizationn", Duchi et al. 2011) learning rule as described in:
+    "Notes on AdaGrad", Chris Dyer
+
+    the update is:
+    x_{t+1,i} = x_{t,i} - learn_rate /(sqrt(g_{t,i}))* df/dx_{t,i}
+    g_{t,i} = g_{t-1,i} + (df/dx_{t,i})**2
+    g_{0,i} = 1
+    
+    Parameters
+    ----------
+    None 
+    
+    """
+
+    def __init__(self):
+        pass
+
+    def add_channels_to_monitor(self, monitor, monitoring_dataset):
+        """
+        .. todo::
+
+            WRITEME
+        """
+        # TODO: add channels worth monitoring
+        return
+
+    def get_updates(self, learning_rate, grads, lr_scalers=None):
+        """
+        .. todo::
+
+            WRITEME
+        """
+        updates = OrderedDict()
+        for param in grads.keys():
+
+            # sum_squared_grads = sum_t(df/dx_i,t)^2 + 1 
+            sum_squared_grads = sharedX(1.0 + param.get_value() * 0.)
+            
+            if param.name is not None:
+                sum_squared_grads.name = 'sum_squared_grads_' + param.name
+
+            # Accumulate gradient
+            new_sum_squared_grads = (
+                    sum_squared_grads + T.sqr(grads[param])
+                    )
+
+            # Compute update
+            delta_x_t = (- lr_scalers.get(param, 1.) * learning_rate 
+                           * T.sqrt(new_sum_squared_grads) 
+                           * grads[param])
+
+            # Apply update
+            updates[sum_squared_grads] = new_sum_squared_grads
+            updates[param] = param + delta_x_t
+
+        return updates
+
